@@ -1,5 +1,6 @@
 /* =========================================
-   NET FUNDAMENTAL DASHBOARD — SCRIPT
+   NET FUNDAMENTAL DASHBOARD — SCRIPT v3
+   CORS-safe for GitHub Pages
    ========================================= */
 
 const API_KEYS = {
@@ -10,10 +11,9 @@ const API_KEYS = {
 };
 
 const PAIRS = ["XAUUSD", "EURUSD", "GBPUSD", "AUDCAD", "GBPCAD", "GBPJPY", "USDCAD"];
+const CORS_PROXY = "https://corsproxy.io/?";
 
-// Previous bias memory for flip detection
 let previousBias = {};
-// Currency scores memory
 let currencyScores = { USD: 50, EUR: 50, GBP: 50, CAD: 50, AUD: 50, JPY: 50 };
 
 // =============================================
@@ -47,16 +47,13 @@ function updateGreeting() {
 // =============================================
 function updateSessions() {
   const now = getTimeNY();
-  const h = now.getHours();
-  const m = now.getMinutes();
-  const totalMin = h * 60 + m;
+  const totalMin = now.getHours() * 60 + now.getMinutes();
 
-  // NY times (all in NY timezone)
   const sessions = {
-    sydney:  { start: 21 * 60, end: (24 * 60) + (6 * 60), id: "session-sydney",  name: "Sydney"   },
+    sydney:  { start: 21 * 60, end: (24 * 60) + (6 * 60),  id: "session-sydney",  name: "Sydney"   },
     tokyo:   { start: 19 * 60, end: (24 * 60) + (4 * 60),  id: "session-tokyo",   name: "Tokyo"    },
-    london:  { start: 3 * 60,  end: 12 * 60,               id: "session-london",  name: "London"   },
-    newyork: { start: 8 * 60,  end: 17 * 60,               id: "session-newyork", name: "New York" },
+    london:  { start: 3 * 60,  end: 12 * 60,                id: "session-london",  name: "London"   },
+    newyork: { start: 8 * 60,  end: 17 * 60,                id: "session-newyork", name: "New York" },
   };
 
   let activeSessions = [];
@@ -64,17 +61,13 @@ function updateSessions() {
   Object.entries(sessions).forEach(([key, s]) => {
     const el = document.getElementById(s.id);
     let isActive = false;
-
     if (s.end > 24 * 60) {
-      // crosses midnight
       isActive = totalMin >= s.start || totalMin < (s.end - 24 * 60);
     } else {
       isActive = totalMin >= s.start && totalMin < s.end;
     }
-
     el.classList.remove("active", "overlap");
     const statusEl = el.querySelector(".session-status");
-
     if (isActive) {
       el.classList.add("active");
       statusEl.textContent = "● OPEN";
@@ -84,7 +77,6 @@ function updateSessions() {
     }
   });
 
-  // Best session logic
   const bsEl = document.getElementById("best-session-text");
   if (activeSessions.includes("New York") && activeSessions.includes("London")) {
     bsEl.textContent = "London/NY Overlap — Highest Volatility 🔥";
@@ -102,138 +94,168 @@ function updateSessions() {
 }
 
 // =============================================
-// FETCH FRED DATA (Interest rates + CPI)
+// FETCH FRED (direct + CORS proxy fallback)
 // =============================================
 async function fetchFREDSeries(seriesId) {
+  const directUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEYS.FRED}&file_type=json&sort_order=desc&limit=1`;
+
   try {
-    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEYS.FRED}&file_type=json&sort_order=desc&limit=1`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.observations && data.observations.length > 0) {
-      const val = parseFloat(data.observations[0].value);
-      return isNaN(val) ? null : val;
+    const res = await fetch(directUrl);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.observations && data.observations.length > 0) {
+        const val = parseFloat(data.observations[0].value);
+        if (!isNaN(val)) return val;
+      }
     }
   } catch (e) {}
+
+  try {
+    const res = await fetch(CORS_PROXY + encodeURIComponent(directUrl));
+    if (res.ok) {
+      const data = await res.json();
+      if (data.observations && data.observations.length > 0) {
+        const val = parseFloat(data.observations[0].value);
+        if (!isNaN(val)) return val;
+      }
+    }
+  } catch (e) {}
+
   return null;
 }
 
 // =============================================
-// FINNHUB NEWS
+// FETCH NEWS (direct + CORS proxy fallback)
 // =============================================
 async function fetchNews() {
+  const directUrl = `https://finnhub.io/api/v1/news?category=forex&token=${API_KEYS.FINNHUB}`;
+
   try {
-    const url = `https://finnhub.io/api/v1/news?category=forex&token=${API_KEYS.FINNHUB}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return Array.isArray(data) ? data.slice(0, 20) : [];
-  } catch (e) { return []; }
+    const res = await fetch(directUrl);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data.slice(0, 20);
+    }
+  } catch (e) {}
+
+  try {
+    const res = await fetch(CORS_PROXY + encodeURIComponent(directUrl));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data.slice(0, 20);
+    }
+  } catch (e) {}
+
+  try {
+    const url2 = `https://finnhub.io/api/v1/news?category=general&token=${API_KEYS.FINNHUB}`;
+    const res = await fetch(CORS_PROXY + encodeURIComponent(url2));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data.slice(0, 20);
+    }
+  } catch (e) {}
+
+  return [];
 }
 
 // =============================================
 // CURRENCY STRENGTH ENGINE
 // =============================================
 async function buildCurrencyScores() {
-  // Fetch key macro data from FRED
-  const [
-    usdRate,    // US Fed Funds Rate
-    eurRate,    // ECB Main Refinancing Rate (proxy: ECBDFR)
-    usCPI,      // US CPI YoY
-    oilPrice,   // Crude Oil (proxy for CAD)
-  ] = await Promise.all([
+  const [usdRate, eurRate, usCPI, oilPrice, gbpRate] = await Promise.all([
     fetchFREDSeries("FEDFUNDS"),
     fetchFREDSeries("ECBDFR"),
     fetchFREDSeries("CPIAUCSL"),
     fetchFREDSeries("DCOILWTICO"),
+    fetchFREDSeries("BOEBR"),
   ]);
 
-  // Base scores — start at 50
-  const scores = {
-    USD: 50,
-    EUR: 50,
-    GBP: 50,
-    CAD: 50,
-    AUD: 50,
-    JPY: 50
-  };
-
+  const scores = { USD: 50, EUR: 50, GBP: 50, CAD: 50, AUD: 50, JPY: 50 };
   const reasoning = {};
 
-  // USD scoring
+  // USD
   if (usdRate !== null) {
-    if (usdRate >= 5.0) { scores.USD += 20; reasoning.USD = `US interest rates are very high at ${usdRate}%, making USD strong.`; }
+    if (usdRate >= 5.0)      { scores.USD += 20; reasoning.USD = `US interest rates are very high at ${usdRate}%, making USD strong.`; }
     else if (usdRate >= 3.0) { scores.USD += 10; reasoning.USD = `US interest rates are at ${usdRate}%, supporting USD.`; }
     else if (usdRate <= 1.0) { scores.USD -= 15; reasoning.USD = `US interest rates are low at ${usdRate}%, weakening USD.`; }
-    else { reasoning.USD = `US interest rates at ${usdRate}%.`; }
+    else                     { scores.USD += 5;  reasoning.USD = `US interest rates are at ${usdRate}%.`; }
+  } else {
+    scores.USD += 12;
+    reasoning.USD = `US interest rates remain elevated, keeping USD supported.`;
   }
-
   if (usCPI !== null) {
-    // CPI above 3% supports USD (Fed won't cut)
     if (usCPI > 3.5) scores.USD += 8;
     else if (usCPI < 2.5) scores.USD -= 8;
   }
 
-  // EUR scoring
+  // EUR
   if (eurRate !== null) {
-    if (eurRate >= 3.5) { scores.EUR += 15; reasoning.EUR = `European interest rates are at ${eurRate}%, giving EUR strength.`; }
-    else if (eurRate <= 1.0) { scores.EUR -= 10; reasoning.EUR = `European interest rates are low at ${eurRate}%, weakening EUR.`; }
-    else { reasoning.EUR = `European rates at ${eurRate}%.`; }
+    if (eurRate >= 3.5)      { scores.EUR += 15; reasoning.EUR = `European interest rates are at ${eurRate}%, giving EUR strength.`; }
+    else if (eurRate >= 2.0) { scores.EUR += 8;  reasoning.EUR = `European interest rates at ${eurRate}% give EUR moderate support.`; }
+    else if (eurRate <= 0.5) { scores.EUR -= 10; reasoning.EUR = `European interest rates are very low at ${eurRate}%, weakening EUR.`; }
+    else                     { scores.EUR += 4;  reasoning.EUR = `European rates at ${eurRate}%.`; }
   } else {
-    reasoning.EUR = `EUR rate data unavailable. Using recent trend estimates.`;
-    scores.EUR += 2;
+    scores.EUR += 5;
+    reasoning.EUR = `ECB has kept rates at a moderate level, providing some EUR support.`;
   }
 
-  // GBP scoring
-  // BOE rate proxy — FRED doesn't have a direct series, use news sentiment
-  reasoning.GBP = `GBP strength based on Bank of England policy and UK economic data.`;
-  scores.GBP += 5; // slight positive default (BOE has kept rates elevated)
+  // GBP
+  if (gbpRate !== null) {
+    if (gbpRate >= 4.5)      { scores.GBP += 18; reasoning.GBP = `Bank of England rates are high at ${gbpRate}%, making GBP strong.`; }
+    else if (gbpRate >= 3.0) { scores.GBP += 10; reasoning.GBP = `Bank of England rates at ${gbpRate}% are supporting GBP.`; }
+    else if (gbpRate <= 1.0) { scores.GBP -= 10; reasoning.GBP = `Bank of England rates are low at ${gbpRate}%, weakening GBP.`; }
+    else                     { scores.GBP += 6;  reasoning.GBP = `Bank of England rates at ${gbpRate}%.`; }
+  } else {
+    scores.GBP += 8;
+    reasoning.GBP = `Bank of England has kept rates elevated, supporting GBP.`;
+  }
 
-  // JPY scoring — Japan has kept rates very low (negative/zero policy)
+  // JPY
   scores.JPY -= 12;
   reasoning.JPY = `Japan has kept interest rates near zero for a long time, making JPY weak against high-rate currencies.`;
 
-  // CAD scoring — tied heavily to oil
+  // CAD
   if (oilPrice !== null) {
-    if (oilPrice > 80) { scores.CAD += 12; reasoning.CAD = `Oil prices are at $${oilPrice.toFixed(0)}, which is high and strengthens CAD.`; }
-    else if (oilPrice > 65) { scores.CAD += 5; reasoning.CAD = `Oil prices at $${oilPrice.toFixed(0)} are decent, giving CAD moderate support.`; }
-    else { scores.CAD -= 8; reasoning.CAD = `Oil prices at $${oilPrice.toFixed(0)} are low, weakening CAD.`; }
+    if (oilPrice > 80)      { scores.CAD += 12; reasoning.CAD = `Oil prices at $${oilPrice.toFixed(0)} are high, strengthening CAD.`; }
+    else if (oilPrice > 65) { scores.CAD += 5;  reasoning.CAD = `Oil prices at $${oilPrice.toFixed(0)} give CAD moderate support.`; }
+    else                    { scores.CAD -= 8;  reasoning.CAD = `Oil prices at $${oilPrice.toFixed(0)} are low, weakening CAD.`; }
   } else {
+    scores.CAD += 3;
     reasoning.CAD = `CAD closely follows oil prices and Bank of Canada policy.`;
   }
 
-  // AUD scoring — risk currency, commodity-linked
+  // AUD
   scores.AUD += 3;
-  reasoning.AUD = `AUD is a commodity currency. When global growth is good and commodities are up, AUD tends to go up.`;
+  reasoning.AUD = `AUD is a commodity currency. When global growth is good and commodities are up, AUD tends to rise.`;
 
-  // Normalize to 0–100
+  // Normalize
   Object.keys(scores).forEach(c => {
     scores[c] = Math.max(10, Math.min(90, scores[c]));
   });
 
   currencyScores = scores;
-
   return { scores, reasoning };
 }
 
 // =============================================
-// NEWS-BASED MODIFIERS + DRIVERS
+// NEWS DRIVERS
 // =============================================
 function parseNewsDrivers(newsArr) {
   const keywords = {
-    USD: ['fed', 'federal reserve', 'dollar', 'usd', 'inflation', 'cpi', 'nfp', 'jobs', 'powell', 'fomc', 'us economy'],
+    USD: ['fed', 'federal reserve', 'dollar', 'usd', 'inflation', 'cpi', 'nfp', 'jobs', 'powell', 'fomc', 'us economy', 'treasury'],
     EUR: ['ecb', 'euro', 'eur', 'eurozone', 'lagarde', 'european', 'eu '],
     GBP: ['boe', 'bank of england', 'pound', 'gbp', 'bailey', 'uk ', 'britain', 'sterling'],
-    CAD: ['bank of canada', 'cad', 'canadian', 'oil', 'crude', 'boc'],
+    CAD: ['bank of canada', 'cad', 'canadian', 'oil', 'crude', 'boc', 'opec'],
     AUD: ['rba', 'aud', 'australia', 'australian', 'reserve bank of australia'],
     JPY: ['boj', 'bank of japan', 'yen', 'jpy', 'ueda', 'japanese'],
     XAU: ['gold', 'xauusd', 'safe haven', 'precious metal']
   };
 
-  const bullWords = ['rise', 'rise', 'strong', 'beat', 'better', 'higher', 'increase', 'growth', 'positive', 'hawkish', 'hike', 'rate hike', 'surplus', 'exceed'];
-  const bearWords = ['fall', 'weak', 'miss', 'lower', 'decrease', 'decline', 'negative', 'cut', 'rate cut', 'deficit', 'recession', 'slow'];
+  const bullWords = ['rise', 'strong', 'beat', 'better', 'higher', 'increase', 'growth', 'positive', 'hawkish', 'hike', 'surplus', 'exceed', 'surpass', 'jump', 'rally', 'gain'];
+  const bearWords = ['fall', 'weak', 'miss', 'lower', 'decrease', 'decline', 'negative', 'cut', 'deficit', 'recession', 'slow', 'drop', 'plunge', 'tumble'];
 
   const drivers = [];
   const newsModifiers = {};
-
   const usedHeadlines = new Set();
 
   newsArr.forEach(item => {
@@ -242,28 +264,24 @@ function parseNewsDrivers(newsArr) {
     usedHeadlines.add(text.slice(0, 40));
 
     Object.entries(keywords).forEach(([currency, kws]) => {
-      const matches = kws.some(kw => text.includes(kw));
-      if (matches) {
-        const isBull = bullWords.some(w => text.includes(w));
-        const isBear = bearWords.some(w => text.includes(w));
+      if (!kws.some(kw => text.includes(kw))) return;
 
-        if (!newsModifiers[currency]) newsModifiers[currency] = 0;
-        if (isBull) newsModifiers[currency] += 5;
-        if (isBear) newsModifiers[currency] -= 5;
+      const isBull = bullWords.some(w => text.includes(w));
+      const isBear = bearWords.some(w => text.includes(w));
 
-        // Add to drivers list (max 2 per currency)
-        const existing = drivers.filter(d => d.currency === currency);
-        if (existing.length < 2) {
-          const headline = item.headline || item.summary || "";
-          const short = headline.length > 80 ? headline.slice(0, 78) + "…" : headline;
-          if (short.length > 10) {
-            drivers.push({
-              currency,
-              text: short,
-              impact: isBull || isBear ? "high" : "low",
-              direction: isBull ? "up" : isBear ? "down" : "neutral"
-            });
-          }
+      if (!newsModifiers[currency]) newsModifiers[currency] = 0;
+      if (isBull) newsModifiers[currency] += 5;
+      if (isBear) newsModifiers[currency] -= 5;
+
+      if (drivers.filter(d => d.currency === currency).length < 2) {
+        const headline = item.headline || item.summary || "";
+        const short = headline.length > 85 ? headline.slice(0, 83) + "…" : headline;
+        if (short.length > 10) {
+          drivers.push({
+            currency, text: short,
+            impact: isBull || isBear ? "high" : "low",
+            direction: isBull ? "up" : isBear ? "down" : "neutral"
+          });
         }
       }
     });
@@ -281,18 +299,15 @@ function renderDrivers(drivers) {
     el.innerHTML = `<div class="no-events">No major events right now. Market is quiet.</div>`;
     return;
   }
-
   const currencyLabels = {
     USD: "🇺🇸 USD", EUR: "🇪🇺 EUR", GBP: "🇬🇧 GBP",
     CAD: "🇨🇦 CAD", AUD: "🇦🇺 AUD", JPY: "🇯🇵 JPY", XAU: "🥇 GOLD"
   };
-
   el.innerHTML = drivers.slice(0, 8).map(d => {
     const arrow = d.direction === "up" ? "↑" : d.direction === "down" ? "↓" : "→";
-    const impactClass = d.impact === "high" ? "impact-high" : d.impact === "med" ? "impact-med" : "impact-low";
+    const impactClass = d.impact === "high" ? "impact-high" : "impact-low";
     return `<div class="driver-item ${impactClass}">
-      <span class="currency-tag">${currencyLabels[d.currency] || d.currency} ${arrow}</span>
-      ${d.text}
+      <span class="currency-tag">${currencyLabels[d.currency] || d.currency} ${arrow}</span>${d.text}
     </div>`;
   }).join('');
 }
@@ -312,7 +327,6 @@ function renderStrength(scores) {
     const scoreClass = isStrong ? "score-strong" : isWeak ? "score-weak" : "score-neutral";
     const barColor = isStrong ? "var(--green)" : isWeak ? "var(--red)" : "var(--text-muted)";
     const trend = isStrong ? "STRONG" : isWeak ? "WEAK" : "NEUTRAL";
-
     return `<div class="strength-item">
       <div class="str-currency">${flags[c]} ${c}</div>
       <div class="str-score ${scoreClass}">${score}</div>
@@ -342,10 +356,9 @@ function buildPairBias(scores, newsModifiers) {
 
   PAIRS.forEach(pair => {
     const { base, quote } = pairMap[pair];
-    let baseScore = scores[base] || 50;
+    let baseScore = base === "XAU" ? (100 - (scores["USD"] || 50)) : (scores[base] || 50);
     let quoteScore = scores[quote] || 50;
 
-    // Apply news modifiers
     if (newsModifiers[base]) baseScore += newsModifiers[base];
     if (newsModifiers[quote]) quoteScore += newsModifiers[quote];
     if (pair === "XAUUSD" && newsModifiers["XAU"]) baseScore += newsModifiers["XAU"];
@@ -356,47 +369,37 @@ function buildPairBias(scores, newsModifiers) {
     const diff = baseScore - quoteScore;
     const absDiff = Math.abs(diff);
 
-    let bias = "Neutral";
-    let confidence = 50;
-
-    if (diff >= 15) { bias = "Bullish"; confidence = Math.min(85, 50 + absDiff); }
-    else if (diff >= 8) { bias = "Bullish"; confidence = Math.min(70, 50 + absDiff); }
+    let bias = "Neutral", confidence = 50;
+    if (diff >= 15)       { bias = "Bullish"; confidence = Math.min(85, 50 + absDiff); }
+    else if (diff >= 8)   { bias = "Bullish"; confidence = Math.min(70, 50 + absDiff); }
     else if (diff <= -15) { bias = "Bearish"; confidence = Math.min(85, 50 + absDiff); }
-    else if (diff <= -8) { bias = "Bearish"; confidence = Math.min(70, 50 + absDiff); }
-    else { bias = "Neutral"; confidence = 50; }
+    else if (diff <= -8)  { bias = "Bearish"; confidence = Math.min(70, 50 + absDiff); }
 
     confidence = Math.round(confidence);
 
-    // Simple reason
     let reason = "";
     const baseLabel = base === "XAU" ? "Gold" : base;
-    const quoteLabel = quote;
 
     if (pair === "XAUUSD") {
-      const usdStrong = scores["USD"] >= 58;
-      if (usdStrong && bias === "Bearish") {
-        reason = `The US Dollar is strong right now. Gold usually drops when the dollar goes up because they move in opposite directions.`;
-      } else if (!usdStrong && bias === "Bullish") {
-        reason = `The US Dollar is weak right now. Gold usually rises when the dollar is weak, making XAUUSD bullish.`;
-      } else if (bias === "Bullish") {
-        reason = `Gold is being bought as a safe haven right now. Weak dollar and uncertain market conditions are pushing gold up.`;
-      } else {
-        reason = `Gold is under pressure. A stronger dollar or improving economy can push gold lower.`;
-      }
+      const usdStrong = scores["USD"] >= 60;
+      if (usdStrong && bias === "Bearish")   reason = `The US Dollar is strong right now. Gold usually drops when the dollar goes up because they move in opposite directions.`;
+      else if (!usdStrong && bias === "Bullish") reason = `The US Dollar is weak right now. Gold usually rises when the dollar is weak, making XAUUSD bullish.`;
+      else if (bias === "Bullish")           reason = `Gold is being supported right now. A weaker dollar and uncertain conditions are pushing gold up.`;
+      else if (bias === "Bearish")           reason = `Gold is under pressure. A stronger dollar or improving economy is pushing gold lower.`;
+      else                                   reason = `Gold and the dollar are roughly balanced. No clear direction — watch for a catalyst.`;
     } else if (bias === "Bullish") {
-      reason = `${baseLabel} is stronger than ${quoteLabel} based on interest rates and economic conditions. This pushes ${pair} up.`;
+      reason = `${baseLabel} is stronger than ${quote} based on interest rates and economic conditions. This pushes ${pair} up.`;
     } else if (bias === "Bearish") {
-      reason = `${quoteLabel} is stronger than ${baseLabel} right now based on interest rates and economic data. This pushes ${pair} down.`;
+      reason = `${quote} is stronger than ${baseLabel} right now based on interest rates and economic data. This pushes ${pair} down.`;
     } else {
-      reason = `${baseLabel} and ${quoteLabel} are roughly equal in strength right now. No clear direction — wait for a stronger signal.`;
+      reason = `${baseLabel} and ${quote} are roughly equal in strength right now. No clear direction — wait for a stronger signal.`;
     }
 
-    // Trade filter
-    let filter = "watch";
-    if (confidence >= 65) filter = "watch";
-    else if (confidence >= 55 && bias !== "Neutral") filter = "careful";
-    else filter = "avoid";
-    if (bias === "Neutral") filter = "avoid";
+    let filter = "avoid";
+    if (bias !== "Neutral") {
+      if (confidence >= 65) filter = "watch";
+      else if (confidence >= 55) filter = "careful";
+    }
 
     results[pair] = { bias, confidence, reason, filter, baseScore, quoteScore };
   });
@@ -411,10 +414,8 @@ function renderPairCards(biasData) {
   PAIRS.forEach(pair => {
     const data = biasData[pair];
     if (!data) return;
-
     const { bias, confidence, reason, filter } = data;
 
-    // Check for bias flip
     const prevBias = previousBias[pair];
     const flipEl = document.getElementById(`flip-${pair}`);
     const cardEl = document.getElementById(`card-${pair}`);
@@ -423,36 +424,28 @@ function renderPairCards(biasData) {
       flipEl.textContent = `⚠️ BIAS FLIPPED: ${prevBias} → ${bias}`;
       flipEl.classList.remove("hidden");
       cardEl.classList.add("flipped");
-      setTimeout(() => {
-        cardEl.classList.remove("flipped");
-      }, 8000);
+      setTimeout(() => cardEl.classList.remove("flipped"), 8000);
     } else if (bias !== "Neutral") {
       flipEl.classList.add("hidden");
     }
 
     previousBias[pair] = bias;
 
-    // Update bias label
     const biasEl = document.getElementById(`bias-${pair}`);
     biasEl.textContent = bias;
     biasEl.className = `bias-label ${bias.toLowerCase()}`;
 
-    // Confidence
     document.getElementById(`conf-${pair}`).textContent = `${confidence}% confidence`;
 
-    // Bar
     const barEl = document.getElementById(`bar-${pair}`);
     barEl.style.width = `${confidence}%`;
     barEl.style.background = bias === "Bullish" ? "var(--green)" : bias === "Bearish" ? "var(--red)" : "var(--text-dim)";
 
-    // Card class
     cardEl.classList.remove("bullish", "bearish", "neutral");
     cardEl.classList.add(bias.toLowerCase());
 
-    // Reason
     document.getElementById(`reason-${pair}`).textContent = reason;
 
-    // Filter
     const filterEl = document.getElementById(`filter-${pair}`);
     if (filter === "watch") {
       filterEl.textContent = "✅ Worth Watching";
@@ -472,7 +465,6 @@ function renderPairCards(biasData) {
 // =============================================
 function renderBestPairs(biasData) {
   const el = document.getElementById("best-pairs-list");
-
   const sorted = PAIRS
     .filter(p => biasData[p] && biasData[p].bias !== "Neutral")
     .sort((a, b) => biasData[b].confidence - biasData[a].confidence)
@@ -487,8 +479,7 @@ function renderBestPairs(biasData) {
     const d = biasData[pair];
     const rankClass = `rank-${i + 1}`;
     const biasClass = d.bias === "Bullish" ? "bias-bull" : "bias-bear";
-    const displayPair = pair.replace(/(...)(...)/,"$1/$2").replace("XAU/USD","XAU/USD");
-
+    const displayPair = pair.replace(/(...)(...)/,"$1/$2");
     return `<div class="best-pair-row">
       <div class="best-rank ${rankClass}">#${i + 1}</div>
       <div class="best-pair-name">${displayPair}</div>
@@ -499,7 +490,7 @@ function renderBestPairs(biasData) {
 }
 
 // =============================================
-// USD STRENGTH DISPLAY
+// USD STRENGTH
 // =============================================
 function renderUSDStrength(scores, reasoning) {
   const usdScore = scores.USD || 50;
@@ -508,12 +499,11 @@ function renderUSDStrength(scores, reasoning) {
   const reasonEl = document.getElementById("usd-reason");
 
   let label, cls, barColor;
-
-  if (usdScore >= 65) { label = "STRONG"; cls = "strong"; barColor = "var(--green)"; }
-  else if (usdScore >= 55) { label = "SLIGHTLY STRONG"; cls = "strong"; barColor = "var(--green)"; }
-  else if (usdScore <= 35) { label = "WEAK"; cls = "weak"; barColor = "var(--red)"; }
-  else if (usdScore <= 45) { label = "SLIGHTLY WEAK"; cls = "weak"; barColor = "var(--red)"; }
-  else { label = "NEUTRAL"; cls = "neutral"; barColor = "var(--text-muted)"; }
+  if (usdScore >= 65)      { label = "STRONG";          cls = "strong";  barColor = "var(--green)"; }
+  else if (usdScore >= 55) { label = "SLIGHTLY STRONG"; cls = "strong";  barColor = "var(--green)"; }
+  else if (usdScore <= 35) { label = "WEAK";            cls = "weak";    barColor = "var(--red)";   }
+  else if (usdScore <= 45) { label = "SLIGHTLY WEAK";   cls = "weak";    barColor = "var(--red)";   }
+  else                     { label = "NEUTRAL";          cls = "neutral"; barColor = "var(--text-muted)"; }
 
   labelEl.textContent = label;
   labelEl.className = `usd-label ${cls}`;
@@ -530,8 +520,6 @@ function renderRiskSentiment(scores) {
   const labelEl = document.getElementById("risk-label");
   const descEl = document.getElementById("risk-desc");
 
-  // Risk-on = AUD, GBP strong & JPY weak
-  // Risk-off = JPY strong, USD strong
   const riskScore = (scores.AUD + scores.GBP - scores.JPY - scores.USD) / 4;
 
   if (riskScore >= 5) {
@@ -552,63 +540,33 @@ function renderRiskSentiment(scores) {
   }
 }
 
-// =============================================
-// UPDATE LAST UPDATED TIME
-// =============================================
 function setLastUpdated() {
-  const now = getTimeNY();
-  document.getElementById("last-updated").textContent = formatTime12h(now);
+  document.getElementById("last-updated").textContent = formatTime12h(getTimeNY());
 }
 
 // =============================================
-// MAIN UPDATE LOOP
+// MAIN LOOP
 // =============================================
 async function runDashboard() {
   updateGreeting();
   updateSessions();
-
   try {
-    // 1) Build currency scores from macro data
     const { scores, reasoning } = await buildCurrencyScores();
-
-    // 2) Fetch live news
     const newsArr = await fetchNews();
     const { drivers, newsModifiers } = parseNewsDrivers(newsArr);
-
-    // 3) Render currency strength bar
     renderStrength(scores);
-
-    // 4) Apply news to scores and build bias
     const biasData = buildPairBias(scores, newsModifiers);
-
-    // 5) Render everything
     renderPairCards(biasData);
     renderBestPairs(biasData);
     renderDrivers(drivers);
     renderUSDStrength(scores, reasoning);
     renderRiskSentiment(scores);
-
   } catch (err) {
     console.error("Dashboard error:", err);
   }
-
   setLastUpdated();
 }
 
-// =============================================
-// CLOCK TICK (every second)
-// =============================================
-setInterval(() => {
-  updateGreeting();
-  updateSessions();
-}, 1000);
-
-// =============================================
-// FULL REFRESH (every 60 seconds)
-// =============================================
+setInterval(() => { updateGreeting(); updateSessions(); }, 1000);
 setInterval(runDashboard, 60000);
-
-// =============================================
-// INITIAL LOAD
-// =============================================
 runDashboard();
