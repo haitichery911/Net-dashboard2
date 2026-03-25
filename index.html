@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NET — Fundamental Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="greeting" id="greeting">Good Morning, Net</div>
+      <div class="header-meta">
+        <span class="live-dot"></span>
+        <span id="current-time" class="mono">--:-- --</span>
+        <span class="sep">·</span>
+        <span class="label">Updated</span>
+        <span id="last-updated" class="mono">--:-- --</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="brand">NET DASHBOARD</div>
+      <div class="version mono">v2.0</div>
+    </div>
+  </header>
+
+  <!-- TOP ROW: Sessions + USD Strength + Risk -->
+  <div class="section-row top-row">
+
+    <!-- SESSION TRACKER -->
+    <section class="card sessions-card">
+      <div class="card-title">SESSIONS</div>
+      <div class="sessions-grid" id="sessions-grid">
+        <div class="session-item" id="session-sydney">
+          <div class="session-name">Sydney</div>
+          <div class="session-hours mono">9PM–6AM</div>
+          <div class="session-status">—</div>
+        </div>
+        <div class="session-item" id="session-tokyo">
+          <div class="session-name">Tokyo</div>
+          <div class="session-hours mono">7PM–4AM</div>
+          <div class="session-status">—</div>
+        </div>
+        <div class="session-item" id="session-london">
+          <div class="session-name">London</div>
+          <div class="session-hours mono">3AM–12PM</div>
+          <div class="session-status">—</div>
+        </div>
+        <div class="session-item" id="session-newyork">
+          <div class="session-name">New York</div>
+          <div class="session-hours mono">8AM–5PM</div>
+          <div class="session-status">—</div>
+        </div>
+      </div>
+      <div class="best-session" id="best-session">
+        <span class="label">Best session right now →</span>
+        <span id="best-session-text">Calculating…</span>
+      </div>
+    </section>
+
+    <!-- USD STRENGTH -->
+    <section class="card usd-card">
+      <div class="card-title">USD STRENGTH</div>
+      <div class="usd-status" id="usd-status">
+        <div class="usd-label" id="usd-label">—</div>
+        <div class="usd-bar-wrap">
+          <div class="usd-bar" id="usd-bar"></div>
+        </div>
+        <div class="usd-reason" id="usd-reason">Waiting for data…</div>
+      </div>
+    </section>
+
+    <!-- RISK SENTIMENT -->
+    <section class="card risk-card">
+      <div class="card-title">MARKET MOOD</div>
+      <div class="risk-icon" id="risk-icon">—</div>
+      <div class="risk-label" id="risk-label">—</div>
+      <div class="risk-desc" id="risk-desc">Waiting for data…</div>
+    </section>
+
+  </div>
+
+  <!-- TODAY'S DRIVERS -->
+  <section class="card drivers-card">
+    <div class="card-title">TODAY'S MARKET DRIVERS
+      <span class="refresh-hint mono">live</span>
+    </div>
+    <div class="drivers-list" id="drivers-list">
+      <div class="driver-item skeleton">Loading news…</div>
+    </div>
+  </section>
+
+  <!-- CURRENCY STRENGTH -->
+  <section class="card strength-card">
+    <div class="card-title">CURRENCY STRENGTH</div>
+    <div class="strength-grid" id="strength-grid">
+      <!-- filled by JS -->
+    </div>
+  </section>
+
+  <!-- BEST PAIRS TODAY -->
+  <section class="card best-pairs-card">
+    <div class="card-title">BEST PAIRS TODAY <span class="label">— Top 3</span></div>
+    <div class="best-pairs-list" id="best-pairs-list">
+      <div class="skeleton mono">Calculating…</div>
+    </div>
+  </section>
+
+  <!-- PAIR CARDS GRID -->
+  <div class="pairs-grid" id="pairs-grid">
+    <!-- XAUUSD -->
+    <article class="pair-card" id="card-XAUUSD" data-pair="XAUUSD">
+      <div class="pair-header">
+        <span class="pair-name">XAU/USD</span>
+        <span class="pair-tag gold-tag">GOLD</span>
+        <span class="flip-alert hidden" id="flip-XAUUSD">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-XAUUSD">—</span>
+        <span class="conf-pct" id="conf-XAUUSD">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-XAUUSD"></div></div>
+      <div class="pair-reason" id="reason-XAUUSD">Waiting for data…</div>
+      <div class="trade-filter" id="filter-XAUUSD">—</div>
+    </article>
+
+    <!-- EURUSD -->
+    <article class="pair-card" id="card-EURUSD" data-pair="EURUSD">
+      <div class="pair-header">
+        <span class="pair-name">EUR/USD</span>
+        <span class="pair-tag">MAJOR</span>
+        <span class="flip-alert hidden" id="flip-EURUSD">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-EURUSD">—</span>
+        <span class="conf-pct" id="conf-EURUSD">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-EURUSD"></div></div>
+      <div class="pair-reason" id="reason-EURUSD">Waiting for data…</div>
+      <div class="trade-filter" id="filter-EURUSD">—</div>
+    </article>
+
+    <!-- GBPUSD -->
+    <article class="pair-card" id="card-GBPUSD" data-pair="GBPUSD">
+      <div class="pair-header">
+        <span class="pair-name">GBP/USD</span>
+        <span class="pair-tag">MAJOR</span>
+        <span class="flip-alert hidden" id="flip-GBPUSD">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-GBPUSD">—</span>
+        <span class="conf-pct" id="conf-GBPUSD">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-GBPUSD"></div></div>
+      <div class="pair-reason" id="reason-GBPUSD">Waiting for data…</div>
+      <div class="trade-filter" id="filter-GBPUSD">—</div>
+    </article>
+
+    <!-- AUDCAD -->
+    <article class="pair-card" id="card-AUDCAD" data-pair="AUDCAD">
+      <div class="pair-header">
+        <span class="pair-name">AUD/CAD</span>
+        <span class="pair-tag">CROSS</span>
+        <span class="flip-alert hidden" id="flip-AUDCAD">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-AUDCAD">—</span>
+        <span class="conf-pct" id="conf-AUDCAD">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-AUDCAD"></div></div>
+      <div class="pair-reason" id="reason-AUDCAD">Waiting for data…</div>
+      <div class="trade-filter" id="filter-AUDCAD">—</div>
+    </article>
+
+    <!-- GBPCAD -->
+    <article class="pair-card" id="card-GBPCAD" data-pair="GBPCAD">
+      <div class="pair-header">
+        <span class="pair-name">GBP/CAD</span>
+        <span class="pair-tag">CROSS</span>
+        <span class="flip-alert hidden" id="flip-GBPCAD">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-GBPCAD">—</span>
+        <span class="conf-pct" id="conf-GBPCAD">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-GBPCAD"></div></div>
+      <div class="pair-reason" id="reason-GBPCAD">Waiting for data…</div>
+      <div class="trade-filter" id="filter-GBPCAD">—</div>
+    </article>
+
+    <!-- GBPJPY -->
+    <article class="pair-card" id="card-GBPJPY" data-pair="GBPJPY">
+      <div class="pair-header">
+        <span class="pair-name">GBP/JPY</span>
+        <span class="pair-tag">CROSS</span>
+        <span class="flip-alert hidden" id="flip-GBPJPY">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-GBPJPY">—</span>
+        <span class="conf-pct" id="conf-GBPJPY">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-GBPJPY"></div></div>
+      <div class="pair-reason" id="reason-GBPJPY">Waiting for data…</div>
+      <div class="trade-filter" id="filter-GBPJPY">—</div>
+    </article>
+
+    <!-- USDCAD -->
+    <article class="pair-card" id="card-USDCAD" data-pair="USDCAD">
+      <div class="pair-header">
+        <span class="pair-name">USD/CAD</span>
+        <span class="pair-tag">MAJOR</span>
+        <span class="flip-alert hidden" id="flip-USDCAD">⚠️ BIAS FLIPPED</span>
+      </div>
+      <div class="bias-row">
+        <span class="bias-label" id="bias-USDCAD">—</span>
+        <span class="conf-pct" id="conf-USDCAD">—</span>
+      </div>
+      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-USDCAD"></div></div>
+      <div class="pair-reason" id="reason-USDCAD">Waiting for data…</div>
+      <div class="trade-filter" id="filter-USDCAD">—</div>
+    </article>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span class="mono">Data: Finnhub · FRED · Twelve Data · ForexRate</span>
+    <span class="mono" id="footer-time">—</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
