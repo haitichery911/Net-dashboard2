@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
 </head>
 <body>
 
@@ -19,216 +19,321 @@
         <span class="live-dot"></span>
         <span id="current-time" class="mono">--:-- --</span>
         <span class="sep">·</span>
-        <span class="label">Updated</span>
+        <span class="meta-label">Updated</span>
         <span id="last-updated" class="mono">--:-- --</span>
       </div>
     </div>
     <div class="header-right">
-      <div class="brand">NET DASHBOARD</div>
-      <div class="version mono">v2.0</div>
+      <div class="brand-tag">NET<span>DASHBOARD</span></div>
     </div>
   </header>
 
-  <!-- TOP ROW: Sessions + USD Strength + Risk -->
-  <div class="section-row top-row">
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="status-bar">
+    <div class="status-item" id="status-fred">
+      <span class="status-dot"></span>
+      <span class="status-label">FRED</span>
+      <span class="status-val" id="sval-fred">connecting…</span>
+    </div>
+    <div class="status-item" id="status-news">
+      <span class="status-dot"></span>
+      <span class="status-label">NEWS</span>
+      <span class="status-val" id="sval-news">connecting…</span>
+    </div>
+    <div class="status-item" id="status-technical">
+      <span class="status-dot"></span>
+      <span class="status-label">TECHNICAL</span>
+      <span class="status-val" id="sval-technical">connecting…</span>
+    </div>
+    <div class="status-item" id="status-calendar">
+      <span class="status-dot"></span>
+      <span class="status-label">CALENDAR</span>
+      <span class="status-val" id="sval-calendar">connecting…</span>
+    </div>
+    <div class="status-refresh mono" id="status-refresh">
+      ↻ refreshes in <span id="countdown">60</span>s
+    </div>
+  </div>
 
-    <!-- SESSION TRACKER -->
+  <!-- TOP ROW -->
+  <div class="top-row">
+
     <section class="card sessions-card">
-      <div class="card-title">SESSIONS</div>
-      <div class="sessions-grid" id="sessions-grid">
+      <div class="card-label">SESSIONS</div>
+      <div class="sessions-grid">
         <div class="session-item" id="session-sydney">
-          <div class="session-name">Sydney</div>
-          <div class="session-hours mono">9PM–6AM</div>
-          <div class="session-status">—</div>
+          <div class="sess-name">Sydney</div>
+          <div class="sess-hours mono">9PM–6AM</div>
+          <div class="sess-status">CLOSED</div>
         </div>
         <div class="session-item" id="session-tokyo">
-          <div class="session-name">Tokyo</div>
-          <div class="session-hours mono">7PM–4AM</div>
-          <div class="session-status">—</div>
+          <div class="sess-name">Tokyo</div>
+          <div class="sess-hours mono">7PM–4AM</div>
+          <div class="sess-status">CLOSED</div>
         </div>
         <div class="session-item" id="session-london">
-          <div class="session-name">London</div>
-          <div class="session-hours mono">3AM–12PM</div>
-          <div class="session-status">—</div>
+          <div class="sess-name">London</div>
+          <div class="sess-hours mono">3AM–12PM</div>
+          <div class="sess-status">CLOSED</div>
         </div>
         <div class="session-item" id="session-newyork">
-          <div class="session-name">New York</div>
-          <div class="session-hours mono">8AM–5PM</div>
-          <div class="session-status">—</div>
+          <div class="sess-name">New York</div>
+          <div class="sess-hours mono">8AM–5PM</div>
+          <div class="sess-status">CLOSED</div>
         </div>
       </div>
-      <div class="best-session" id="best-session">
-        <span class="label">Best session right now →</span>
-        <span id="best-session-text">Calculating…</span>
+      <div class="best-session-row">
+        <span class="meta-label">Best right now →</span>
+        <span id="best-session-text" class="best-sess-val">—</span>
       </div>
     </section>
 
-    <!-- USD STRENGTH -->
     <section class="card usd-card">
-      <div class="card-title">USD STRENGTH</div>
-      <div class="usd-status" id="usd-status">
-        <div class="usd-label" id="usd-label">—</div>
-        <div class="usd-bar-wrap">
-          <div class="usd-bar" id="usd-bar"></div>
-        </div>
-        <div class="usd-reason" id="usd-reason">Waiting for data…</div>
-      </div>
+      <div class="card-label">USD STRENGTH</div>
+      <div class="usd-big" id="usd-label">—</div>
+      <div class="usd-bar-track"><div class="usd-bar-fill" id="usd-bar"></div></div>
+      <div class="usd-reason" id="usd-reason">Waiting for data…</div>
     </section>
 
-    <!-- RISK SENTIMENT -->
     <section class="card risk-card">
-      <div class="card-title">MARKET MOOD</div>
-      <div class="risk-icon" id="risk-icon">—</div>
-      <div class="risk-label" id="risk-label">—</div>
-      <div class="risk-desc" id="risk-desc">Waiting for data…</div>
+      <div class="card-label">MARKET MOOD</div>
+      <div class="risk-emoji" id="risk-icon">—</div>
+      <div class="risk-title" id="risk-label">—</div>
+      <div class="risk-body" id="risk-desc">Waiting for data…</div>
     </section>
 
   </div>
 
-  <!-- TODAY'S DRIVERS -->
+  <!-- DRIVERS -->
   <section class="card drivers-card">
-    <div class="card-title">TODAY'S MARKET DRIVERS
-      <span class="refresh-hint mono">live</span>
-    </div>
+    <div class="card-label">TODAY'S MARKET DRIVERS <span class="live-badge">LIVE</span></div>
     <div class="drivers-list" id="drivers-list">
-      <div class="driver-item skeleton">Loading news…</div>
+      <div class="driver-skeleton">Loading news…</div>
     </div>
   </section>
 
   <!-- CURRENCY STRENGTH -->
   <section class="card strength-card">
-    <div class="card-title">CURRENCY STRENGTH</div>
-    <div class="strength-grid" id="strength-grid">
-      <!-- filled by JS -->
-    </div>
+    <div class="card-label">CURRENCY STRENGTH</div>
+    <div class="strength-grid" id="strength-grid"></div>
   </section>
 
-  <!-- BEST PAIRS TODAY -->
+  <!-- BEST PAIRS -->
   <section class="card best-pairs-card">
-    <div class="card-title">BEST PAIRS TODAY <span class="label">— Top 3</span></div>
+    <div class="card-label">BEST PAIRS TODAY <span class="meta-label">— top 3</span></div>
     <div class="best-pairs-list" id="best-pairs-list">
-      <div class="skeleton mono">Calculating…</div>
+      <div class="loading-text mono">Calculating…</div>
     </div>
   </section>
 
-  <!-- PAIR CARDS GRID -->
-  <div class="pairs-grid" id="pairs-grid">
+  <!-- PAIR CARDS -->
+  <div class="pairs-grid">
+
     <!-- XAUUSD -->
-    <article class="pair-card" id="card-XAUUSD" data-pair="XAUUSD">
-      <div class="pair-header">
-        <span class="pair-name">XAU/USD</span>
-        <span class="pair-tag gold-tag">GOLD</span>
-        <span class="flip-alert hidden" id="flip-XAUUSD">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-XAUUSD">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">XAU/USD <span class="pair-badge gold-badge">GOLD</span></div>
+          <div class="flip-alert hidden" id="flip-XAUUSD">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-XAUUSD">—</div>
+          <div class="conf-text" id="conf-XAUUSD">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-XAUUSD">—</span>
-        <span class="conf-pct" id="conf-XAUUSD">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-XAUUSD"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-XAUUSD"></div></div>
       <div class="pair-reason" id="reason-XAUUSD">Waiting for data…</div>
-      <div class="trade-filter" id="filter-XAUUSD">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-XAUUSD">—</div>
+        <div class="tech-score-wrap" id="tech-XAUUSD"></div>
+        <button class="expand-btn" onclick="toggleExpand('XAUUSD')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-XAUUSD">
+        <div class="expand-section">
+          <div class="expand-title">📊 Full Breakdown</div>
+          <div class="expand-body" id="breakdown-XAUUSD">Loading…</div>
+        </div>
+        <div class="expand-section">
+          <div class="expand-title">🏦 Central Bank</div>
+          <div class="expand-body" id="cb-XAUUSD">Loading…</div>
+        </div>
+        <div class="expand-section">
+          <div class="expand-title">🌍 World News Impact</div>
+          <div class="expand-body" id="worldnews-XAUUSD">Loading…</div>
+        </div>
+        <div class="expand-section">
+          <div class="expand-title">📅 Upcoming Events</div>
+          <div class="expand-body" id="events-XAUUSD">Loading…</div>
+        </div>
+      </div>
     </article>
 
     <!-- EURUSD -->
-    <article class="pair-card" id="card-EURUSD" data-pair="EURUSD">
-      <div class="pair-header">
-        <span class="pair-name">EUR/USD</span>
-        <span class="pair-tag">MAJOR</span>
-        <span class="flip-alert hidden" id="flip-EURUSD">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-EURUSD">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">EUR/USD <span class="pair-badge">MAJOR</span></div>
+          <div class="flip-alert hidden" id="flip-EURUSD">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-EURUSD">—</div>
+          <div class="conf-text" id="conf-EURUSD">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-EURUSD">—</span>
-        <span class="conf-pct" id="conf-EURUSD">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-EURUSD"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-EURUSD"></div></div>
       <div class="pair-reason" id="reason-EURUSD">Waiting for data…</div>
-      <div class="trade-filter" id="filter-EURUSD">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-EURUSD">—</div>
+        <div class="tech-score-wrap" id="tech-EURUSD"></div>
+        <button class="expand-btn" onclick="toggleExpand('EURUSD')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-EURUSD">
+        <div class="expand-section"><div class="expand-title">📊 Full Breakdown</div><div class="expand-body" id="breakdown-EURUSD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🏦 Central Bank</div><div class="expand-body" id="cb-EURUSD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🌍 World News Impact</div><div class="expand-body" id="worldnews-EURUSD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">📅 Upcoming Events</div><div class="expand-body" id="events-EURUSD">Loading…</div></div>
+      </div>
     </article>
 
     <!-- GBPUSD -->
-    <article class="pair-card" id="card-GBPUSD" data-pair="GBPUSD">
-      <div class="pair-header">
-        <span class="pair-name">GBP/USD</span>
-        <span class="pair-tag">MAJOR</span>
-        <span class="flip-alert hidden" id="flip-GBPUSD">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-GBPUSD">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">GBP/USD <span class="pair-badge">MAJOR</span></div>
+          <div class="flip-alert hidden" id="flip-GBPUSD">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-GBPUSD">—</div>
+          <div class="conf-text" id="conf-GBPUSD">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-GBPUSD">—</span>
-        <span class="conf-pct" id="conf-GBPUSD">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-GBPUSD"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-GBPUSD"></div></div>
       <div class="pair-reason" id="reason-GBPUSD">Waiting for data…</div>
-      <div class="trade-filter" id="filter-GBPUSD">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-GBPUSD">—</div>
+        <div class="tech-score-wrap" id="tech-GBPUSD"></div>
+        <button class="expand-btn" onclick="toggleExpand('GBPUSD')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-GBPUSD">
+        <div class="expand-section"><div class="expand-title">📊 Full Breakdown</div><div class="expand-body" id="breakdown-GBPUSD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🏦 Central Bank</div><div class="expand-body" id="cb-GBPUSD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🌍 World News Impact</div><div class="expand-body" id="worldnews-GBPUSD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">📅 Upcoming Events</div><div class="expand-body" id="events-GBPUSD">Loading…</div></div>
+      </div>
     </article>
 
     <!-- AUDCAD -->
-    <article class="pair-card" id="card-AUDCAD" data-pair="AUDCAD">
-      <div class="pair-header">
-        <span class="pair-name">AUD/CAD</span>
-        <span class="pair-tag">CROSS</span>
-        <span class="flip-alert hidden" id="flip-AUDCAD">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-AUDCAD">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">AUD/CAD <span class="pair-badge">CROSS</span></div>
+          <div class="flip-alert hidden" id="flip-AUDCAD">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-AUDCAD">—</div>
+          <div class="conf-text" id="conf-AUDCAD">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-AUDCAD">—</span>
-        <span class="conf-pct" id="conf-AUDCAD">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-AUDCAD"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-AUDCAD"></div></div>
       <div class="pair-reason" id="reason-AUDCAD">Waiting for data…</div>
-      <div class="trade-filter" id="filter-AUDCAD">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-AUDCAD">—</div>
+        <div class="tech-score-wrap" id="tech-AUDCAD"></div>
+        <button class="expand-btn" onclick="toggleExpand('AUDCAD')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-AUDCAD">
+        <div class="expand-section"><div class="expand-title">📊 Full Breakdown</div><div class="expand-body" id="breakdown-AUDCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🏦 Central Bank</div><div class="expand-body" id="cb-AUDCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🌍 World News Impact</div><div class="expand-body" id="worldnews-AUDCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">📅 Upcoming Events</div><div class="expand-body" id="events-AUDCAD">Loading…</div></div>
+      </div>
     </article>
 
     <!-- GBPCAD -->
-    <article class="pair-card" id="card-GBPCAD" data-pair="GBPCAD">
-      <div class="pair-header">
-        <span class="pair-name">GBP/CAD</span>
-        <span class="pair-tag">CROSS</span>
-        <span class="flip-alert hidden" id="flip-GBPCAD">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-GBPCAD">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">GBP/CAD <span class="pair-badge">CROSS</span></div>
+          <div class="flip-alert hidden" id="flip-GBPCAD">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-GBPCAD">—</div>
+          <div class="conf-text" id="conf-GBPCAD">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-GBPCAD">—</span>
-        <span class="conf-pct" id="conf-GBPCAD">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-GBPCAD"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-GBPCAD"></div></div>
       <div class="pair-reason" id="reason-GBPCAD">Waiting for data…</div>
-      <div class="trade-filter" id="filter-GBPCAD">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-GBPCAD">—</div>
+        <div class="tech-score-wrap" id="tech-GBPCAD"></div>
+        <button class="expand-btn" onclick="toggleExpand('GBPCAD')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-GBPCAD">
+        <div class="expand-section"><div class="expand-title">📊 Full Breakdown</div><div class="expand-body" id="breakdown-GBPCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🏦 Central Bank</div><div class="expand-body" id="cb-GBPCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🌍 World News Impact</div><div class="expand-body" id="worldnews-GBPCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">📅 Upcoming Events</div><div class="expand-body" id="events-GBPCAD">Loading…</div></div>
+      </div>
     </article>
 
     <!-- GBPJPY -->
-    <article class="pair-card" id="card-GBPJPY" data-pair="GBPJPY">
-      <div class="pair-header">
-        <span class="pair-name">GBP/JPY</span>
-        <span class="pair-tag">CROSS</span>
-        <span class="flip-alert hidden" id="flip-GBPJPY">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-GBPJPY">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">GBP/JPY <span class="pair-badge">CROSS</span></div>
+          <div class="flip-alert hidden" id="flip-GBPJPY">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-GBPJPY">—</div>
+          <div class="conf-text" id="conf-GBPJPY">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-GBPJPY">—</span>
-        <span class="conf-pct" id="conf-GBPJPY">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-GBPJPY"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-GBPJPY"></div></div>
       <div class="pair-reason" id="reason-GBPJPY">Waiting for data…</div>
-      <div class="trade-filter" id="filter-GBPJPY">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-GBPJPY">—</div>
+        <div class="tech-score-wrap" id="tech-GBPJPY"></div>
+        <button class="expand-btn" onclick="toggleExpand('GBPJPY')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-GBPJPY">
+        <div class="expand-section"><div class="expand-title">📊 Full Breakdown</div><div class="expand-body" id="breakdown-GBPJPY">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🏦 Central Bank</div><div class="expand-body" id="cb-GBPJPY">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🌍 World News Impact</div><div class="expand-body" id="worldnews-GBPJPY">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">📅 Upcoming Events</div><div class="expand-body" id="events-GBPJPY">Loading…</div></div>
+      </div>
     </article>
 
     <!-- USDCAD -->
-    <article class="pair-card" id="card-USDCAD" data-pair="USDCAD">
-      <div class="pair-header">
-        <span class="pair-name">USD/CAD</span>
-        <span class="pair-tag">MAJOR</span>
-        <span class="flip-alert hidden" id="flip-USDCAD">⚠️ BIAS FLIPPED</span>
+    <article class="pair-card" id="card-USDCAD">
+      <div class="pair-top">
+        <div class="pair-left">
+          <div class="pair-name">USD/CAD <span class="pair-badge">MAJOR</span></div>
+          <div class="flip-alert hidden" id="flip-USDCAD">⚠️ BIAS FLIPPED</div>
+        </div>
+        <div class="pair-right">
+          <div class="bias-text" id="bias-USDCAD">—</div>
+          <div class="conf-text" id="conf-USDCAD">—</div>
+        </div>
       </div>
-      <div class="bias-row">
-        <span class="bias-label" id="bias-USDCAD">—</span>
-        <span class="conf-pct" id="conf-USDCAD">—</span>
-      </div>
-      <div class="conf-bar-wrap"><div class="conf-bar" id="bar-USDCAD"></div></div>
+      <div class="conf-track"><div class="conf-fill" id="bar-USDCAD"></div></div>
       <div class="pair-reason" id="reason-USDCAD">Waiting for data…</div>
-      <div class="trade-filter" id="filter-USDCAD">—</div>
+      <div class="pair-footer">
+        <div class="trade-filter" id="filter-USDCAD">—</div>
+        <div class="tech-score-wrap" id="tech-USDCAD"></div>
+        <button class="expand-btn" onclick="toggleExpand('USDCAD')">More Info ▾</button>
+      </div>
+      <div class="expand-panel hidden" id="expand-USDCAD">
+        <div class="expand-section"><div class="expand-title">📊 Full Breakdown</div><div class="expand-body" id="breakdown-USDCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🏦 Central Bank</div><div class="expand-body" id="cb-USDCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">🌍 World News Impact</div><div class="expand-body" id="worldnews-USDCAD">Loading…</div></div>
+        <div class="expand-section"><div class="expand-title">📅 Upcoming Events</div><div class="expand-body" id="events-USDCAD">Loading…</div></div>
+      </div>
     </article>
-  </div>
 
-  <!-- FOOTER -->
+  </div><!-- end pairs-grid -->
+
   <footer class="footer">
-    <span class="mono">Data: Finnhub · FRED · Twelve Data · ForexRate</span>
+    <span class="mono">Data: FRED · Finnhub · Twelve Data · corsproxy.io</span>
     <span class="mono" id="footer-time">—</span>
   </footer>
 
